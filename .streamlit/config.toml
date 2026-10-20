@@ -1,0 +1,12 @@
+[theme]
+primaryColor = "#2563EB"
+backgroundColor = "#FAFAFA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#111827"
+
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600, sans-serif"
+headingFont = "'Source Serif 4':https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600, serif"
+
+[server]
+headless = true
+port = 8501

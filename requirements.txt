@@ -1,0 +1,10 @@
+streamlit
+tensorflow
+pillow
+pymupdf
+sentence-transformers
+google-generativeai
+reportlab
+faiss-cpu
+langchain-text-splitters
+numpy
