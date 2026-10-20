@@ -1,10 +1,12 @@
+
 streamlit
-tensorflow
-pillow
+tensorflow==2.15.1
+pillow==10.2.0
 pymupdf
 sentence-transformers
 google-generativeai
 reportlab
 faiss-cpu
 langchain-text-splitters
-numpy
+numpy<2
+python-dotenv
