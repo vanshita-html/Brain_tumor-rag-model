@@ -21,12 +21,14 @@ INDEX_FILE_PATH = os.path.join(VECTOR_STORE_DIR, "vector_index.pkl")
 KNOWLEDGE_BASE_DIR = "knowledge_base"
 load_dotenv()
 
-DEFAULT_USER_KEY = os.getenv("GOOGLE_API_KEY")
+DEFAULT_USER_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 # Candidate Gemini model names in order of recommendation
 MODEL_CANDIDATES = [
+    "gemini-2.5-flash",
     "gemini-3.6-flash",
     "gemini-flash-latest",
-    "gemini-2.5-flash",
+    "gemini-1.5-flash",
+    "gemini-2.0-flash",
     "gemini-3.5-flash",
     "gemini-pro-latest"
 ]
@@ -198,7 +200,8 @@ Assistant Response:"""
 
 def get_gemini_key():
     """Get Gemini API key from environment variable or fallback user key."""
-    env_key = os.getenv("GEMINI_API_KEY")
+    load_dotenv()
+    env_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if env_key and env_key.strip():
         return env_key.strip()
     return DEFAULT_USER_KEY

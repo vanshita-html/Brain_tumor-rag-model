@@ -70,6 +70,12 @@ def preprocess_image(image_input, target_size=(128, 128)):
     - Convert to numpy array & rescale by 1/255.0
     - Expand dimensions to (1, 128, 128, 3)
     """
+    if hasattr(image_input, 'seek'):
+        try:
+            image_input.seek(0)
+        except Exception:
+            pass
+
     if isinstance(image_input, Image.Image):
         img = image_input
     else:

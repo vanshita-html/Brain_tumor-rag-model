@@ -1,8 +1,8 @@
 Predicted Class: glioma
-Confidence: 82.53%
+Confidence: 44.09%
 
 Class-wise Probabilities:
-glioma : 82.53%
-meningioma : 17.47%
-notumor : 0.00%
-pituitary : 0.00%
+glioma : 44.09%
+meningioma : 34.58%
+notumor : 1.32%
+pituitary : 20.02%

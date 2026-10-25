@@ -1,12 +1,16 @@
+import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 import tkinter as tk
-from tkinter import filedialog, Label, Button
+from tkinter import filedialog, Label, Button, messagebox
 from PIL import Image, ImageTk
 
-# Load trained model
-model = tf.keras.models.load_model("final_model.h5")
+# Load trained model safely
+model_path = "final_model.h5" if os.path.exists("final_model.h5") else "best_model.h5"
+if not os.path.exists(model_path):
+    raise FileNotFoundError("Model file not found. Ensure 'final_model.h5' or 'best_model.h5' is present.")
+model = tf.keras.models.load_model(model_path, compile=False)
 
 img_width, img_height = 128, 128
 classes = ['glioma', 'meningioma', 'notumor', 'pituitary']

@@ -1,10 +1,13 @@
 import os
 import streamlit as st
 from PIL import Image
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Import helper modules (unmodified logic)
 from model_utils import load_tumor_model, preprocess_image, predict_tumor
-from rag_utils import ask_rag_assistant, load_vector_store
+from rag_utils import ask_rag_assistant, load_vector_store, get_gemini_key
 
 # -----------------------------------------------------------------------------
 # Page Configuration
@@ -209,39 +212,63 @@ with tab1:
             label_visibility="collapsed"
         )
         
+        st.markdown('<p style="font-size: 13px; font-weight: 600; color: #4B5563; margin-top: 14px; margin-bottom: 6px;">Or test with a sample MRI scan:</p>', unsafe_allow_html=True)
+        sample_cols = st.columns(4)
+        if sample_cols[0].button("Glioma", key="btn_sample_glioma"):
+            st.session_state.sample_path = "static/Tr-gl_1246.jpg"
+            st.session_state.sample_name = "Glioma Sample (Tr-gl_1246.jpg)"
+        if sample_cols[1].button("Meningioma", key="btn_sample_men"):
+            st.session_state.sample_path = "static/Tr-me_1244.jpg"
+            st.session_state.sample_name = "Meningioma Sample (Tr-me_1244.jpg)"
+        if sample_cols[2].button("Pituitary", key="btn_sample_pit"):
+            st.session_state.sample_path = "static/Tr-pi_1304.jpg"
+            st.session_state.sample_name = "Pituitary Sample (Tr-pi_1304.jpg)"
+        if sample_cols[3].button("No Tumor", key="btn_sample_no"):
+            st.session_state.sample_path = "static/Tr-no_1488.jpg"
+            st.session_state.sample_name = "Healthy Slice (Tr-no_1488.jpg)"
+
+        active_image = None
+        display_caption = ""
         if uploaded_file is not None:
+            active_image = uploaded_file
+            display_caption = f"Uploaded Image: {uploaded_file.name}"
+        elif "sample_path" in st.session_state and os.path.exists(st.session_state.sample_path):
+            active_image = st.session_state.sample_path
+            display_caption = st.session_state.get("sample_name", "Sample MRI Scan")
+
+        if active_image is not None:
             try:
-                img_preview = Image.open(uploaded_file)
-                st.markdown('<div style="border: 1px solid #E5E7EB; border-radius: 8px; background: #FFFFFF; padding: 12px; margin-top: 12px;">', unsafe_allow_html=True)
+                img_preview = Image.open(active_image)
+                st.markdown('<div style="border: 1px solid #E5E7EB; border-radius: 8px; background: #FFFFFF; padding: 12px; margin-top: 14px;">', unsafe_allow_html=True)
                 st.image(
                     img_preview,
-                    caption=f"Uploaded Image: {uploaded_file.name}",
+                    caption=display_caption,
                     use_container_width=True
                 )
                 st.markdown('</div>', unsafe_allow_html=True)
             except Exception as e:
-                st.error(f"Failed to open uploaded image file: {e}")
+                st.error(f"Failed to open image file: {e}")
         else:
             st.markdown("""
-            <div style="border: 1px solid #E5E7EB; border-radius: 8px; background: #FFFFFF; padding: 24px; text-align: center; color: #6B7280; font-size: 14px;">
-                Drag and drop or browse an MRI scan to perform CNN tumor prediction.
+            <div style="border: 1px solid #E5E7EB; border-radius: 8px; background: #FFFFFF; padding: 24px; text-align: center; color: #6B7280; font-size: 14px; margin-top: 14px;">
+                Drag and drop or browse an MRI scan, or click a sample button above to perform CNN tumor prediction.
             </div>
             """, unsafe_allow_html=True)
 
     with col_result:
         st.markdown('<h2 style="font-size: 21px; font-weight: 700; color: #111827; margin-bottom: 12px;">Inference & Analysis</h2>', unsafe_allow_html=True)
         
-        if uploaded_file is not None and model_loaded:
+        if active_image is not None and model_loaded:
             with st.spinner("Running model prediction..."):
                 try:
-                    pil_img, img_tensor = preprocess_image(uploaded_file)
+                    pil_img, img_tensor = preprocess_image(active_image)
                     prediction = predict_tumor(model, img_tensor)
                     
                     label = prediction['label']
                     conf = prediction['confidence']
                     desc = prediction['description']
                     
-                    # Restyled Result Box: Plain 1px-bordered box (no colored icon badges)
+                    # Restyled Result Box
                     st.markdown(f"""
                     <div style="background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
                         <div style="font-size: 12px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">PREDICTED CLASS</div>
@@ -249,13 +276,26 @@ with tab1:
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Confidence Metric (flat, no extra progress-bar graphics)
+                    # Confidence Metric
                     st.metric(
                         label="Confidence Score",
                         value=f"{conf:.2f}%"
                     )
+
+                    # Class Probabilities Breakdown
+                    st.markdown('<div style="font-size: 13px; font-weight: 700; color: #374151; margin-top: 18px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Class Probabilities</div>', unsafe_allow_html=True)
+                    for cname, pinfo in prediction.get('probabilities', {}).items():
+                        c_label = pinfo['label']
+                        c_prob = pinfo['prob']
+                        st.markdown(f"""
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 2px; color: #4B5563;">
+                            <span>{c_label}</span>
+                            <span style="font-weight: 600; color: #111827;">{c_prob:.2f}%</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        st.progress(min(max(float(c_prob) / 100.0, 0.0), 1.0))
                     
-                    # Short Description Text at 14-15px gray
+                    # Short Description Text
                     st.markdown(f"""
                     <div style="background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; padding: 18px; font-size: 14px; line-height: 1.6; color: #4B5563; margin-top: 16px;">
                         <strong style="color: #111827;">Overview:</strong> {desc}
@@ -264,10 +304,10 @@ with tab1:
                         
                 except Exception as e:
                     st.error(f"Error during model inference: {e}")
-        elif uploaded_file is None:
+        elif active_image is None:
             st.markdown("""
             <div style="border: 1px solid #E5E7EB; border-radius: 8px; background: #FFFFFF; padding: 24px; text-align: center; color: #6B7280; font-size: 14px;">
-                Awaiting image upload to compute classification.
+                Awaiting image upload or sample selection to compute classification.
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -330,7 +370,7 @@ with tab2:
         </ul>
         """, unsafe_allow_html=True)
         
-        api_status = "Connected" if os.getenv("GEMINI_API_KEY") else "Passage Fallback Mode"
+        api_status = "Connected" if get_gemini_key() else "Passage Fallback Mode"
         st.markdown(f'<p style="font-size: 13px; color: #6B7280; margin: 0;"><strong>Gemini Status:</strong> {api_status}</p>', unsafe_allow_html=True)
 
     # Display Chat History with Custom HTML Blocks (No default emojis/avatars/bubbles)

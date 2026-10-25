@@ -1,12 +1,13 @@
 
-streamlit
-tensorflow==2.15.1
-pillow==10.2.0
+streamlit>=1.30.0
+tensorflow>=2.15.0
+pillow>=10.2.0
 pymupdf
 sentence-transformers
 google-generativeai
 reportlab
 faiss-cpu
 langchain-text-splitters
-numpy<2
+numpy
 python-dotenv
+
